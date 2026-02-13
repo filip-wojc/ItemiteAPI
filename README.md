@@ -13,7 +13,7 @@ Itemite API is a backend system for an online classifieds platform built with AS
 - **AutoMapper** - Object-to-object mapping
 - **FluentValidation** - Input validation
 
-### Storage & Caching
+### Databases
 
 - **PostgreSQL** - Primary database 
 - **Redis** - Data caching and connection tracking
@@ -23,10 +23,11 @@ Itemite API is a backend system for an online classifieds platform built with AS
 - **Serilog** - Structured logging with custom themes
 - **Swagger** - API documentation
 
-### Authentication & Security
+### Authentication
 
 - **JWT Bearer** - Token-based authentication
 - **Refresh Tokens** - Secure token renewal
+- **ASP.NET Identity** - Identity framework
 
 ### External Integrations
 
@@ -53,6 +54,45 @@ Built using **Clean Architecture** principles with clear separation of concerns:
 Each layer has it's own extension functions to register/configure their respective services.
 Each layer has it's own specific exceptions defined.
 ```
+## API endpoints
+
+### Admin Panel
+<img width="1493" height="1134" alt="image" src="https://github.com/user-attachments/assets/68f2776f-532c-4806-9e8d-ad7abc48d48c" />
+
+### Auction Listing
+<img width="1466" height="333" alt="image" src="https://github.com/user-attachments/assets/26f49624-66a6-4e27-82ce-ba9eae0c367f" />
+
+### Authentication
+<img width="1516" height="607" alt="image" src="https://github.com/user-attachments/assets/ccc21d7c-d295-4eb1-81cf-013adab72908" />
+
+### Banners
+<img width="1479" height="103" alt="image" src="https://github.com/user-attachments/assets/7329de40-1e37-4314-8a65-4f025c094a1a" />
+
+### Categories
+<img width="1479" height="284" alt="image" src="https://github.com/user-attachments/assets/a30dab92-b232-4fc4-8dd2-7e8e0f59c5ba" />
+
+### Listing
+<img width="1497" height="501" alt="image" src="https://github.com/user-attachments/assets/547c4708-db25-47bf-9888-c60ede883dde" />
+
+### Messages
+<img width="1479" height="402" alt="image" src="https://github.com/user-attachments/assets/a4164c82-9ad5-4150-aaba-306ed1ceb5bd" />
+
+### Notifications
+<img width="1451" height="281" alt="image" src="https://github.com/user-attachments/assets/17ae5f17-3cef-457b-9a4b-8623b212602e" />
+
+### Payment
+<img width="1456" height="512" alt="image" src="https://github.com/user-attachments/assets/db133916-0a0a-4baa-bd3d-1627e5aa9973" />
+
+### Product Listing
+<img width="1445" height="328" alt="image" src="https://github.com/user-attachments/assets/cf9de80d-7f7d-44de-93d6-94b1bccda53b" />
+
+### Report
+<img width="1444" height="121" alt="image" src="https://github.com/user-attachments/assets/c0539929-373f-4592-9923-9f9354fd8a66" />
+
+### User
+<img width="1467" height="732" alt="image" src="https://github.com/user-attachments/assets/f10e5bb7-041b-4207-a513-c75eaeaa536a" />
+
+
 ## How to run
 
 ### 1. Clone the repository
