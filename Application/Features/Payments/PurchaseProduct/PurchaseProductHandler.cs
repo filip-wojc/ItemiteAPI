@@ -1,12 +1,13 @@
 using Domain.Configs;
-using Domain.DTOs.Notifications;
 using Domain.DTOs.Payments;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Events;
 using Domain.Extensions;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,7 @@ public class PurchaseProductHandler(
     IStripeConnectService stripeConnectService,
     IUnitOfWork unitOfWork,
     ICacheService cacheService,
-    INotificationService notificationService,
+    IPublishEndpoint publishEndpoint,
     IOptions<PaymentSettings> paymentSettings,
     ILogger<PurchaseProductCommand> logger
 ) : IRequestHandler<PurchaseProductCommand, PurchaseProductResponse>
@@ -150,13 +151,15 @@ public class PurchaseProductHandler(
                 "Amount: {Amount} PLN, PaymentIntent: {PaymentIntentId}",
                 product.Id, request.BuyerId, finalPrice, paymentIntent.Id);
 
-            await notificationService.SendNotification([product.OwnerId], request.BuyerId, new NotificationInfo
+            await publishEndpoint.Publish(new ProductPurchasedEvent
             {
-                Message =  $"User {buyer.UserName} has bought your product {product.Name}",
-                ListingId =  product.Id,
-                ResourceType = ResourceType.Product.ToString(),
-                NotificationImageUrl = product.ListingPhotos.First(lp => lp.Order == 1).Photo.Url
-            });
+                ProductId = product.Id,
+                ProductName = product.Name,
+                SellerId = product.OwnerId,
+                BuyerId = request.BuyerId,
+                BuyerUserName = buyer.UserName!,
+                ProductPhotoUrl = product.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url
+            }, cancellationToken);
 
             return new PurchaseProductResponse
             {

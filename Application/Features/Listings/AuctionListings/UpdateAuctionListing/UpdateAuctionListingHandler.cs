@@ -2,13 +2,14 @@ using Application.Exceptions;
 using AutoMapper;
 using Domain.Configs;
 using Domain.DTOs.AuctionListing;
-using Domain.DTOs.Notifications;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Events;
 using Domain.ValueObjects;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +23,7 @@ public class UpdateAuctionListingHandler(
     ICacheService cacheService,
     IUnitOfWork unitOfWork,
     IMapper mapper,
-    INotificationService notificationService,
+    IPublishEndpoint publishEndpoint,
     ILogger<UpdateAuctionListingHandler> logger
     ) : IRequestHandler<UpdateAuctionListingCommand, AuctionListingResponse>
 {
@@ -177,17 +178,17 @@ public class UpdateAuctionListingHandler(
 
             var followers = await auctionListingRepository.GetListingFollowersAsync(request.ListingId);
             var auctionListingResponse = mapper.Map<AuctionListingResponse>(auctionListingToUpdate);
-            
-            var notificationInfo = new NotificationInfo
+
+            await publishEndpoint.Publish(new ListingUpdatedEvent
             {
-                Message = $"Auction {auctionListingToUpdate.Name} has been updated.",
                 ListingId = auctionListingToUpdate.Id,
+                ListingName = auctionListingToUpdate.Name,
+                OwnerId = request.UserId,
                 ResourceType = ResourceType.Auction.ToString(),
-                NotificationImageUrl = auctionListingToUpdate.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url
-            };
-            
-            await notificationService.SendNotification(followers.Select(f => f.Id).ToList(), request.UserId, notificationInfo);
-            
+                ListingPhotoUrl = auctionListingToUpdate.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url,
+                FollowerIds = followers.Select(f => f.Id).ToList()
+            }, cancellationToken);
+
             return auctionListingResponse;
         }
         catch (Exception ex)

@@ -3,9 +3,10 @@ using AutoMapper;
 using Domain.Configs;
 using Domain.Entities;
 using Domain.Enums;
-using Domain.ValueObjects;
+using Domain.Events;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ namespace Application.Features.Auth.Register;
 public class RegisterHandler(
     UserManager<User> userManager,
     IMapper mapper,
-    IEmailService emailService,
+    IPublishEndpoint publishEndpoint,
     IOptions<AuthSettings> authSettings
     ) : IRequestHandler<RegisterCommand, int>
 {
@@ -36,18 +37,15 @@ public class RegisterHandler(
         user.EmailConfirmationTokenExpirationDate = DateTime.UtcNow.AddMinutes(tokenExpirationInMinutes);
         user.AuthProvider = AuthProvider.Email;
         
-        await userManager.AddToRolesAsync(user, [Roles.User.ToString()]);
+        await userManager.AddToRolesAsync(user, [nameof(Roles.User)]);
+        await userManager.UpdateAsync(user);
 
-        try
+        await publishEndpoint.Publish(new UserRegisteredEvent
         {
-            await emailService.SendConfirmationAsync(user, emailToken);
-            await userManager.UpdateAsync(user);
-        }
-        catch (Exception)
-        {
-            await userManager.DeleteAsync(user);
-            throw new EmailException("Error while sending confirmation email", []);
-        }
+            Email = user.Email!,
+            UserName = user.UserName!,
+            EmailToken = emailToken
+        }, cancellationToken);
         
         return user.Id;
     }

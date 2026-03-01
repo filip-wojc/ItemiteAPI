@@ -1,7 +1,8 @@
 using Application.Exceptions;
 using Domain.Entities;
+using Domain.Events;
 using Infrastructure.Exceptions;
-using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
@@ -9,7 +10,7 @@ namespace Application.Features.Users.LockUser;
 
 public class LockUserHandler(
     UserManager<User> userManager,
-    IEmailService emailService
+    IPublishEndpoint publishEndpoint
     ) : IRequestHandler<LockUserCommand>
 {
     public async Task Handle(LockUserCommand request, CancellationToken cancellationToken)
@@ -35,7 +36,13 @@ public class LockUserHandler(
             var errors = result.Errors.Select(e => e.Description).ToList();
             throw new BadRequestException("Failed to lock user", errors);
         }
-        
-        await emailService.SendNotificationAsync(userToLockout, "Account locked", $"Your account has been locked until {lockoutDate.ToString("g")}", request.LockUserDto.LockoutMessage ?? string.Empty );
+
+        await publishEndpoint.Publish(new UserLockedEvent
+        {
+            UserName = userToLockout.UserName!,
+            Email = userToLockout.Email!,
+            LockDate = lockoutDate.ToString("g"),
+            LockMessage = request.LockUserDto.LockoutMessage!
+        }, cancellationToken);
     }
 }

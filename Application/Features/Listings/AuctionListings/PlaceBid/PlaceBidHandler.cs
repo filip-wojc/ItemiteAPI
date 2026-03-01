@@ -1,11 +1,12 @@
 using Domain.Configs;
-using Domain.DTOs.Notifications;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Events;
 using Domain.Extensions;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ public class PlaceBidHandler(
     IStripeConnectService stripeConnectService,
     ICacheService cacheService,
     IUnitOfWork unitOfWork,
-    INotificationService notificationService,
+    IPublishEndpoint publishEndpoint,
     UserManager<User> userManager,
     IOptions<PaymentSettings> paymentSettings,
     ILogger<PlaceBidHandler> logger
@@ -174,29 +175,17 @@ public class PlaceBidHandler(
             await cacheService.RemoveAsync($"{CacheKeys.BIDS}{auction.Id}");
             await cacheService.RemoveAsync($"{CacheKeys.AUCTION_LISTING}{auction.Id}");
 
-            // Notify auction owner
-            await notificationService.SendNotification([auction.OwnerId], request.UserId, new NotificationInfo
+            await publishEndpoint.Publish(new BidPlacedEvent
             {
-                Message =
-                    $"User {bidder.UserName} placed a new bid with value: {bidToAdd.BidPrice} in your auction {auction.Name}",
-                ListingId = request.AuctionId,
-                ResourceType = ResourceType.Auction.ToString(),
-                NotificationImageUrl = auction.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url
-            });
-
-            // Notify former highest bidder they were outbid
-            if (formerHighestBid != null)
-            {
-                await notificationService.SendNotification([formerHighestBid.BidderId], request.UserId,
-                    new NotificationInfo
-                    {
-                        Message =
-                            $"User {bidder.UserName} placed a new bid with value: {bidToAdd.BidPrice} in auction {auction.Name}. You are no longer the highest bidder.",
-                        ListingId = request.AuctionId,
-                        ResourceType = ResourceType.Auction.ToString(),
-                        NotificationImageUrl = auction.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url
-                    });
-            }
+                AuctionId = auction.Id,
+                AuctionName = auction.Name,
+                AuctionOwnerId = auction.OwnerId,
+                BidderId = request.UserId,
+                BidderUserName = bidder.UserName!,
+                BidPrice = bidToAdd.BidPrice,
+                AuctionPhotoUrl = auction.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url,
+                FormerHighestBidderId = formerHighestBid?.BidderId
+            }, cancellationToken);
 
             return bidToAdd.Id;
         }

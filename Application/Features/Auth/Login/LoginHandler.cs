@@ -50,7 +50,7 @@ public class LoginHandler(
                 user.EmailConfirmationTokenExpirationDate = DateTime.UtcNow.AddMinutes(tokenExpirationInMinutes);
                 try
                 {
-                    await emailService.SendConfirmationAsync(user, emailToken);
+                    await emailService.SendConfirmationAsync(user.UserName!, user.Email!, emailToken);
                     await userManager.UpdateAsync(user);
                 }
                 catch (Exception ex)

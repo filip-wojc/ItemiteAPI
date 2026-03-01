@@ -1,7 +1,9 @@
 using Application.Exceptions;
 using Domain.Entities;
+using Domain.Events;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
@@ -9,7 +11,7 @@ namespace Application.Features.Users.UnlockUser;
 
 public class UnlockUserHandler(
     UserManager<User> userManager,
-    IEmailService emailService
+    IPublishEndpoint publishEndpoint
     ) : IRequestHandler<UnlockUserCommand>
 {
     public async Task Handle(UnlockUserCommand request, CancellationToken cancellationToken)
@@ -33,7 +35,12 @@ public class UnlockUserHandler(
             var errors = result.Errors.Select(e => e.Description).ToList();
             throw new BadRequestException("Failed to unlock user", errors);
         }
-        
-        await emailService.SendNotificationAsync(userToUnlock, "Account unlocked", $"Your account has been unlocked!", request.UnlockUserDto.UnlockMessage ?? string.Empty);
+
+        await publishEndpoint.Publish(new UserUnlockedEvent
+        {
+            UserName = userToUnlock.UserName!,
+            Email = userToUnlock.Email!,
+            UnlockMessage = request.UnlockUserDto.UnlockMessage ?? string.Empty
+        });
     }
 }

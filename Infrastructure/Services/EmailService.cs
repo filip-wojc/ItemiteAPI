@@ -14,13 +14,13 @@ public class EmailService(
     IFluentEmailFactory fluentEmailFactory
 ) : IEmailService
 {
-    public async Task SendConfirmationAsync(User user, string emailToken)
+    public async Task SendConfirmationAsync(string userName, string userEmail, string emailToken)
     {
         
         var queryParam = new Dictionary<string, string>
         {
             { "token", emailToken },
-            { "email", user.Email! }
+            { "email", userEmail }
         };
 
         var emailConfirmationUrl = redirectSettings.Value.EmailVerificationUrl;
@@ -32,11 +32,11 @@ public class EmailService(
         var email = fluentEmailFactory.Create();
 
         var sendResponse = await email
-            .To(user.Email!)
+            .To(userEmail)
             .Subject("Itemite email confirmation")
             .UsingTemplateFromFile(template, new EmailConfirmationModel
             {
-                UserName = user.UserName!,
+                UserName = userName,
                 ConfirmationLink = confirmationLink
             })
             .SendAsync();
@@ -139,7 +139,7 @@ public class EmailService(
         }
     }
 
-    public async Task SendNotificationAsync(User recipient, string emailSubject, string title, string message)
+    public async Task SendNotificationAsync(string userName, string userEmail, string emailSubject, string title, string message)
     {
         // TODO: Prepare email template
         var template = "Helpers/EmailTemplates/Notification.cshtml";
@@ -147,11 +147,11 @@ public class EmailService(
         var email = fluentEmailFactory.Create();
         
         var sendResponse = await email
-            .To(recipient.Email)
+            .To(userEmail)
             .Subject(emailSubject)
             .UsingTemplateFromFile(template, new EmailNotificationModel
             {
-                Title = title, Message = message, RecipientUsername = recipient.UserName!
+                Title = title, Message = message, RecipientUsername = userName
             })
             .SendAsync();
 

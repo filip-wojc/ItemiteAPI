@@ -1,14 +1,15 @@
 using Application.Exceptions;
 using AutoMapper;
 using Domain.Configs;
-using Domain.DTOs.Notifications;
 using Domain.DTOs.ProductListing;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Events;
 using Domain.ValueObjects;
 using Infrastructure.Exceptions;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Interfaces.Services;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +23,7 @@ public class UpdateProductListingHandler(
     ICacheService cacheService,
     IUnitOfWork unitOfWork,
     IMapper mapper,
-    INotificationService notificationService,
+    IPublishEndpoint publishEndpoint,
     ILogger<UpdateProductListingHandler> logger
     ) : IRequestHandler<UpdateProductListingCommand, ProductListingResponse>
 {
@@ -166,16 +167,16 @@ public class UpdateProductListingHandler(
             
             var productListingResponse = mapper.Map<ProductListingResponse>(productListingToUpdate);
             var followers = await productListingRepository.GetListingFollowersAsync(request.ListingId);
-            
-            var notificationInfo = new NotificationInfo
+
+            await publishEndpoint.Publish(new ListingUpdatedEvent
             {
-                Message = $"Product listing {productListingToUpdate.Name} has been updated.",
                 ListingId = productListingToUpdate.Id,
+                ListingName = productListingToUpdate.Name,
+                OwnerId = request.UserId,
                 ResourceType = ResourceType.Product.ToString(),
-                NotificationImageUrl = productListingToUpdate.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url
-            };
-            
-            await notificationService.SendNotification(followers.Select(f => f.Id).ToList(), request.UserId, notificationInfo);
+                ListingPhotoUrl = productListingToUpdate.ListingPhotos.FirstOrDefault(lp => lp.Order == 1)?.Photo.Url,
+                FollowerIds = followers.Select(f => f.Id).ToList()
+            }, cancellationToken);
 
             return productListingResponse;
         }

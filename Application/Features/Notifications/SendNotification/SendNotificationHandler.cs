@@ -38,6 +38,6 @@ public class SendNotificationHandler(
         await notificationService.SendNotification([recipient.Id], request.UserId,
             notificationInfo);
         
-        await emailService.SendNotificationAsync(recipient, request.SendNotificationDto.EmailSubject, request.SendNotificationDto.Title, request.SendNotificationDto.Message);
+        await emailService.SendNotificationAsync(recipient.UserName!, recipient.Email!, request.SendNotificationDto.EmailSubject, request.SendNotificationDto.Title, request.SendNotificationDto.Message);
     }
 }
