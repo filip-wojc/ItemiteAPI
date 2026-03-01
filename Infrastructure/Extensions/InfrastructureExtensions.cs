@@ -5,6 +5,7 @@ using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Interfaces.Services;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,6 +47,9 @@ public static class InfrastructureExtensions
                                    ?? throw new InvalidOperationException("Connection 'Redis' not found.");
             return ConnectionMultiplexer.Connect(connectionString);
         });
+
+        services.RegisterMassTransit(configuration);
+        
         StripeConfiguration.ApiKey = configuration["StripeSettings:SecretKey"] ??
                                      throw new ConfigException("Stripe SecretKey missing");
         services.AddScoped<ICacheService, CacheService>();
