@@ -315,7 +315,7 @@ The following sections must be filled with your own credentials:
 - SMTPSettings → SMTP host, port, username and password
 - EmailSettings → Email address used to send system emails
 
-### 5. Start infrastructure (PostgreSQL + Redis)
+### 5. Start the infrastructure services
 ```bash
 docker compose up -d
 ```
